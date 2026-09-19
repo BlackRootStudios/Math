@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calc1 Tutor — Algebra through Calculus</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0e1117; --page: #f7f8fa; --card: #ffffff; --rule: #e2e5eb;
+    --blue: #2563eb; --blue-light: #eff6ff; --blue-mid: #bfdbfe;
+    --green: #16a34a; --green-light: #f0fdf4;
+    --red: #dc2626; --red-light: #fef2f2;
+    --amber: #d97706; --amber-light: #fffbeb;
+    --purple: #7c3aed; --purple-light: #f5f3ff;
+    --muted: #6b7280; --radius: 10px;
+    --font: 'Georgia', serif; --mono: 'Courier New', monospace;
+  }
+  body { font-family: var(--font); background: var(--page); color: var(--ink); min-height: 100vh; font-size: 16px; line-height: 1.7; }
+
+  /* HEADER */
+  header { background: var(--ink); color: #fff; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; height: 52px; position: sticky; top: 0; z-index: 100; gap: 12px; }
+  .logo { font-size: 1rem; font-weight: bold; white-space: nowrap; }
+  .logo span { color: var(--blue-mid); }
+
+  /* COURSE TABS */
+  .course-bar { background: #1e293b; display: flex; border-bottom: 1px solid #334155; overflow-x: auto; }
+  .course-btn { padding: 10px 20px; font-size: 0.8rem; border: none; background: none; color: #94a3b8; cursor: pointer; font-family: var(--font); white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .course-btn.active { color: #fff; border-bottom-color: var(--blue); }
+  .course-btn:hover { color: #fff; }
+
+  /* TOPIC PILLS */
+  .topic-bar { background: var(--card); border-bottom: 1px solid var(--rule); padding: 8px 16px; display: flex; gap: 6px; overflow-x: auto; }
+  .pill { padding: 5px 14px; border-radius: 20px; font-size: 0.72rem; background: var(--page); color: var(--muted); border: 1px solid var(--rule); cursor: pointer; font-family: var(--font); transition: all 0.15s; white-space: nowrap; }
+  .pill:hover, .pill.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  /* LAYOUT */
+  .container { max-width: 860px; margin: 0 auto; padding: 28px 16px 80px; }
+  .topic-header { margin-bottom: 20px; }
+  .topic-header h1 { font-size: 1.7rem; font-weight: normal; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .topic-header p { color: var(--muted); font-size: 0.88rem; }
+
+  /* CARDS */
+  .card { background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 0.95rem; font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+
+  /* CONCEPT */
+  .concept { background: var(--blue-light); border-left: 3px solid var(--blue); padding: 12px 16px; border-radius: 0 var(--radius) var(--radius) 0; margin-bottom: 14px; font-size: 0.9rem; }
+
+  /* FORMULA */
+  .formula { background: var(--ink); color: #e2e8f0; font-family: var(--mono); padding: 12px 16px; border-radius: var(--radius); font-size: 0.85rem; margin: 10px 0; overflow-x: auto; line-height: 1.8; }
+
+  /* STEPS */
+  .steps { display: flex; flex-direction: column; gap: 8px; }
+  .step { display: flex; gap: 12px; align-items: flex-start; padding: 10px; border-radius: 8px; background: var(--page); border: 1px solid var(--rule); }
+  .step-num { width: 26px; height: 26px; background: var(--blue); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: bold; flex-shrink: 0; font-family: sans-serif; }
+  .step-body { flex: 1; font-size: 0.88rem; }
+  .step-formula { font-family: var(--mono); background: #f1f5f9; padding: 3px 7px; border-radius: 4px; font-size: 0.82rem; margin-top: 4px; display: inline-block; }
+
+  /* TABS */
+  .tab-bar { display: flex; border-bottom: 1px solid var(--rule); margin-bottom: 20px; }
+  .tab { padding: 8px 16px; font-size: 0.82rem; border: none; background: none; cursor: pointer; color: var(--muted); font-family: var(--font); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
+  .tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: bold; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* PRACTICE */
+  .practice-problem { background: var(--amber-light); border: 1px solid #fde68a; border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .practice-problem .q { font-size: 0.92rem; margin-bottom: 10px; }
+  .input-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .answer-input { border: 1px solid var(--rule); border-radius: 6px; padding: 7px 10px; font-size: 0.88rem; font-family: var(--mono); width: 180px; outline: none; transition: border-color 0.15s; }
+  .answer-input:focus { border-color: var(--blue); }
+  .check-btn { background: var(--blue); color: #fff; border: none; border-radius: 6px; padding: 7px 16px; font-size: 0.82rem; cursor: pointer; font-family: var(--font); }
+  .check-btn:hover { background: #1d4ed8; }
+  .hint-btn { background: none; border: 1px solid var(--rule); border-radius: 6px; padding: 7px 12px; font-size: 0.78rem; cursor: pointer; color: var(--muted); font-family: var(--font); }
+  .hint-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .feedback { margin-top: 8px; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; display: none; }
+  .feedback.correct { background: var(--green-light); border: 1px solid #bbf7d0; color: var(--green); display: block; }
+  .feedback.wrong { background: var(--red-light); border: 1px solid #fecaca; color: var(--red); display: block; }
+  .feedback.hint { background: var(--amber-light); border: 1px solid #fde68a; color: var(--amber); display: block; }
+
+  /* ASK AI */
+  .ask-section { background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius); padding: 20px; margin-top: 28px; }
+  .ask-section textarea { width: 100%; border: 1px solid var(--rule); border-radius: 8px; padding: 10px; font-size: 0.88rem; font-family: var(--font); resize: vertical; min-height: 72px; outline: none; transition: border-color 0.15s; }
+  .ask-section textarea:focus { border-color: var(--blue); }
+  .ask-btn { background: var(--ink); color: #fff; border: none; border-radius: 8px; padding: 9px 22px; font-size: 0.88rem; cursor: pointer; font-family: var(--font); margin-top: 8px; }
+  .ask-btn:hover { background: #1e293b; }
+  .ask-btn:disabled { background: var(--muted); cursor: not-allowed; }
+  .ai-response { margin-top: 14px; padding: 14px; background: var(--page); border-radius: 8px; font-size: 0.88rem; line-height: 1.8; display: none; white-space: pre-wrap; }
+
+  /* COURSE SECTIONS */
+  .course-section { display: none; }
+  .course-section.active { display: block; }
+
+  @media(max-width:600px) { .card { padding: 14px; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Calc<span>1</span> Tutor</div>
+</header>
+
+<div class="course-bar">
+  <button class="course-btn active" onclick="showCourse('alg1')">Algebra 1</button>
+  <button class="course-btn" onclick="showCourse('alg2')">Algebra 2</button>
+  <button class="course-btn" onclick="showCourse('precalc')">Pre-Calculus</button>
+  <button class="course-btn" onclick="showCourse('calc1')">Calculus 1</button>
+</div>
+
+<div class="topic-bar" id="topic-bar">
+  <!-- filled by JS -->
+</div>
+
+<div class="container" id="main-content">
+  <!-- filled by JS -->
+</div>
+
+<script>
+// ── DATA ──
+const COURSES = {
+  alg1: {
+    name: 'Algebra 1',
+    topics: {
+      expressions: {
+        name: 'Expressions & Operations',
+        desc: 'Variables, simplifying, and the order of operations.',
+        concept: `An algebraic expression combines numbers, variables, and operations.
+PEMDAS order: Parentheses → Exponents → Multiply/Divide → Add/Subtract
+
+Like terms share the same variable and exponent.
+Only like terms can be combined.`,
+        formulas: [`Like terms:  3x + 5x = 8x   (add coefficients)
+Unlike:     3x + 5y  (cannot combine)
+
+Distributive property:
+  a(b + c) = ab + ac
+  3(x + 4) = 3x + 12`],
+        examples: [
+          {
+            title: 'Simplify: 3x + 2y - x + 5y',
+            steps: [
+              'Group like terms together',
+              '(3x - x) + (2y + 5y)',
+              '2x + 7y',
+              'Answer: 2x + 7y ✓'
+            ]
+          }
+        ],
+        practice: [
+          { q: 'Simplify: 4x + 3 - 2x + 7', answer: '2x+10', hint: 'Combine the x terms, then combine the numbers' },
+          { q: 'Expand: 5(2x - 3)', answer: '10x-15', hint: 'Distribute 5 to each term inside the parentheses' },
+          { q: 'Simplify: 3a + 2b - a + 4b', answer: '2a+6b', hint: 'Group a terms together and b terms together' }
+        ]
+      },
+      equations: {
+        name: 'Linear Equations',
+        desc: 'Solving equations with one variable.',
+        concept: `A linear equation has a variable to the first power.
+Goal: isolate the variable on one side.
+Whatever you do to one side, do to the other.`,
+        formulas: [`Steps to solve:
+1. Distribute if needed
+2. Combine like terms on each side
+3. Move variable terms to one side
+4. Move constants to the other side
+5. Divide by the coefficient`],
+        examples: [
+          {
+            title: 'Solve: 3x + 7 = 22',
+            steps: [
+              'Subtract 7 from both sides',
+              '3x = 15',
+              'Divide both sides by 3',
+              'x = 5  ✓',
+              'Check: 3(5) + 7 = 15 + 7 = 22 ✓'
+            ]
+          }
+        ],
+        practice: [
+          { q: 'Solve: 2x + 5 = 13', answer: '4', hint: 'Subtract 5 from both sides, then divide by 2' },
+          { q: 'Solve: 4x - 3 = 17', answer: '5', hint: 'Add 3 to both sides first' },
+          { q: 'Solve: 3(x + 2) = 21', answer: '5', hint: 'Distribute first: 3x + 6 = 21' }
+        ]
+      },
+      inequalities: {
+        name: 'Inequalities',
+        desc: 'Solving and graphing inequalities.',
+        concept: `Inequalities work like equations with one key rule:
+When you multiply or divide by a NEGATIVE number, flip the inequality sign!`,
+        formulas: [`Symbols:  >  greater than
+          <  less than
+          ≥  greater than or equal to
+          ≤  less than or equal to
+
+Flip the sign:  -2x > 6  →  x < -3  (divided by -2)`],
+        examples: [
+          {
+            title: 'Solve: 3x - 4 > 8',
+            steps: ['Add 4 to both sides', '3x > 12', 'Divide by 3 (positive, no flip)', 'x > 4  ✓']
+          }
+        ],
+        practice: [
+          { q: 'Solve: 2x + 3 < 11 (give x < ?)', answer: 'x<4', hint: 'Subtract 3, then divide by 2' },
+          { q: 'Solve: -3x > 9 (give x < or > ?)', answer: 'x<-3', hint: 'Divide by -3 — flip the sign!' }
+        ]
+      },
+      graphing: {
+        name: 'Graphing Lines',
+        desc: 'Slope, intercepts, and the equation of a line.',
+        concept: `A linear equation in slope-intercept form: y = mx + b
+  m = slope (rise over run)
+  b = y-intercept (where line crosses y-axis)`,
+        formulas: [`Slope formula:  m = (y₂ - y₁) / (x₂ - x₁)
+
+Slope-intercept:  y = mx + b
+Standard form:    Ax + By = C
+Point-slope:      y - y₁ = m(x - x₁)`],
+        examples: [
+          {
+            title: 'Find slope between (1,2) and (4,8)',
+            steps: ['m = (y₂-y₁)/(x₂-x₁)', 'm = (8-2)/(4-1)', 'm = 6/3', 'm = 2  ✓']
+          }
+        ],
+        practice: [
+          { q: 'What is the slope of y = 3x - 5?', answer: '3', hint: 'In y = mx + b, m is the slope' },
+          { q: 'What is the y-intercept of y = 2x + 7?', answer: '7', hint: 'In y = mx + b, b is the y-intercept' },
+          { q: 'Find slope: (0,3) and (2,7)', answer: '2', hint: 'Slope = (7-3)/(2-0)' }
+        ]
+      },
+      systems: {
+        name: 'Systems of Equations',
+        desc: 'Solving two equations with two unknowns.',
+        concept: `A system of equations has two or more equations with the same variables.
+Three methods: Substitution, Elimination, Graphing`,
+        formulas: [`Substitution: solve one equation for a variable, substitute into other
+Elimination: add/subtract equations to cancel a variable
+
+Solution is the point (x,y) where both lines intersect`],
+        examples: [
+          {
+            title: 'Solve: x + y = 5 and x - y = 1',
+            steps: ['Add both equations to eliminate y', '2x = 6', 'x = 3', 'Substitute: 3 + y = 5', 'y = 2', 'Answer: (3, 2) ✓']
+          }
+        ],
+        practice: [
+          { q: 'Solve by elimination: x+y=7 and x-y=3. What is x?', answer: '5', hint: 'Add the equations to eliminate y: 2x = 10' },
+          { q: 'Solve by elimination: x+y=7 and x-y=3. What is y?', answer: '2', hint: 'Substitute x=5 back into x+y=7' }
+        ]
+      }
+    }
+  },
+  alg2: {
+    name: 'Algebra 2',
+    topics: {
+      quadratics: {
+        name: 'Quadratic Equations',
+        desc: 'Solving equations with x² using multiple methods.',
+        concept: `A quadratic equation has the form ax² + bx + c = 0
+Four solving methods: Factor, Square Root, Complete the Square, Quadratic Formula`,
+        formulas: [`Quadratic Formula:  x = [-b ± √(b²-4ac)] / 2a
+
+Discriminant (b²-4ac):
+  > 0 → two real solutions
+  = 0 → one real solution
+  < 0 → no real solutions (complex)`],
+        examples: [
+          {
+            title: 'Solve: x² - 5x + 6 = 0 by factoring',
+            steps: ['Find two numbers that multiply to 6 and add to -5', 'Those are -2 and -3', 'Factor: (x-2)(x-3) = 0', 'Set each factor to zero: x-2=0 or x-3=0', 'x = 2 or x = 3  ✓']
+          },
+          {
+            title: 'Solve: 2x² + 3x - 2 = 0 using quadratic formula',
+            steps: ['a=2, b=3, c=-2', 'x = [-3 ± √(9+16)] / 4', 'x = [-3 ± √25] / 4', 'x = [-3 ± 5] / 4', 'x = 2/4 = 1/2  or  x = -8/4 = -2', 'x = 1/2 or x = -2  ✓']
+          }
+        ],
+        practice: [
+          { q: 'Solve x²-7x+12=0 by factoring. Enter both solutions as x=a,b', answer: 'x=3,4', hint: 'Find two numbers that multiply to 12 and add to -7' },
+          { q: 'What is the discriminant of x²-4x+4=0?', answer: '0', hint: 'b²-4ac = 16 - 4(1)(4)' },
+          { q: 'How many real solutions does x²+x+3=0 have?', answer: '0', hint: 'Compute the discriminant: b²-4ac. If negative, no real solutions' }
+        ]
+      },
+      polynomials: {
+        name: 'Polynomials',
+        desc: 'Operations and factoring of polynomial expressions.',
+        concept: `A polynomial is a sum of terms with whole number exponents.
+Degree = highest exponent. Leading coefficient = coefficient of highest degree term.`,
+        formulas: [`Special products:
+  (a+b)² = a² + 2ab + b²
+  (a-b)² = a² - 2ab + b²
+  (a+b)(a-b) = a² - b²
+
+Remainder theorem: f(a) = remainder when f(x) ÷ (x-a)`],
+        examples: [
+          {
+            title: 'Expand: (2x+3)²',
+            steps: ['Use (a+b)² = a²+2ab+b²', 'a=2x, b=3', '(2x)² + 2(2x)(3) + (3)²', '4x² + 12x + 9  ✓']
+          }
+        ],
+        practice: [
+          { q: 'Expand (x+5)²', answer: 'x^2+10x+25', hint: 'Use (a+b)² = a²+2ab+b²' },
+          { q: 'Factor: x²-16', answer: '(x+4)(x-4)', hint: 'Difference of squares: a²-b² = (a+b)(a-b)' },
+          { q: 'What is the degree of 3x⁴-2x²+7?', answer: '4', hint: 'The degree is the highest exponent' }
+        ]
+      },
+      functions: {
+        name: 'Functions',
+        desc: 'Domain, range, composition, and inverse functions.',
+        concept: `A function assigns each input exactly one output.
+f(x) notation means "f of x" — plug x in and evaluate.`,
+        formulas: [`Domain: all valid inputs (x values)
+Range: all possible outputs (y values)
+
+Composition: (f∘g)(x) = f(g(x))
+  Plug g(x) in as the input of f
+
+Inverse: f⁻¹(x) — swap x and y, then solve for y
+  Graphs are reflections over y = x`],
+        examples: [
+          {
+            title: 'Find (f∘g)(x) if f(x)=2x+1 and g(x)=x²',
+            steps: ['(f∘g)(x) = f(g(x))', 'Replace x in f with g(x)=x²', 'f(x²) = 2(x²)+1', 'Answer: 2x²+1  ✓']
+          }
+        ],
+        practice: [
+          { q: 'If f(x)=3x-1, find f(4)', answer: '11', hint: 'Plug in x=4: 3(4)-1' },
+          { q: 'If g(x)=x²+2, find g(-3)', answer: '11', hint: 'Plug in x=-3: (-3)²+2' },
+          { q: 'Find the inverse of f(x)=2x+6. Enter as x/2-3 or similar', answer: 'x/2-3', hint: 'Swap x and y: x=2y+6, then solve for y' }
+        ]
+      },
+      exponentials: {
+        name: 'Exponentials & Logs',
+        desc: 'Exponential growth, logarithms, and their properties.',
+        concept: `Exponential: y = aˣ  (base a, exponent x)
+Logarithm: the inverse of exponential
+log_b(x) = y  means  b^y = x`,
+        formulas: [`Log rules:
+  log(xy) = log(x) + log(y)
+  log(x/y) = log(x) - log(y)
+  log(xⁿ) = n·log(x)
+  log_b(b) = 1
+  log_b(1) = 0
+
+Natural log: ln(x) = log_e(x)
+  ln(eˣ) = x  and  e^(ln x) = x`],
+        examples: [
+          {
+            title: 'Solve: 2ˣ = 32',
+            steps: ['Rewrite 32 as a power of 2', '32 = 2⁵', 'So 2ˣ = 2⁵', 'x = 5  ✓']
+          }
+        ],
+        practice: [
+          { q: 'log₂(8) = ?', answer: '3', hint: '2^? = 8. Since 2³=8, the answer is 3' },
+          { q: 'ln(e⁴) = ?', answer: '4', hint: 'ln and e cancel: ln(eⁿ) = n' },
+          { q: 'Solve: 3ˣ = 27', answer: '3', hint: 'Write 27 as a power of 3: 27 = 3³' }
+        ]
+      }
+    }
+  },
+  precalc: {
+    name: 'Pre-Calculus',
+    topics: {
+      trig: {
+        name: 'Trigonometry',
+        desc: 'Sin, cos, tan and the unit circle.',
+        concept: `Trigonometry studies relationships between angles and sides of triangles.
+SOH-CAH-TOA for right triangles:
+  Sin = Opposite/Hypotenuse
+  Cos = Adjacent/Hypotenuse
+  Tan = Opposite/Adjacent`,
+        formulas: [`Unit circle key values:
+  0°    (0):   sin=0,    cos=1,   tan=0
+  30°   (π/6): sin=1/2,  cos=√3/2, tan=1/√3
+  45°   (π/4): sin=√2/2, cos=√2/2, tan=1
+  60°   (π/3): sin=√3/2, cos=1/2,  tan=√3
+  90°   (π/2): sin=1,    cos=0,   tan=undef
+
+Pythagorean identity: sin²θ + cos²θ = 1`],
+        examples: [
+          {
+            title: 'Find sin(30°), cos(30°), tan(30°)',
+            steps: ['Use unit circle values', 'sin(30°) = 1/2', 'cos(30°) = √3/2', 'tan(30°) = sin/cos = (1/2)/(√3/2) = 1/√3 = √3/3  ✓']
+          }
+        ],
+        practice: [
+          { q: 'sin(90°) = ?', answer: '1', hint: 'At 90° on the unit circle, the y-coordinate is 1' },
+          { q: 'cos(0°) = ?', answer: '1', hint: 'At 0° on the unit circle, the x-coordinate is 1' },
+          { q: 'tan(45°) = ?', answer: '1', hint: 'tan = sin/cos = (√2/2)/(√2/2)' }
+        ]
+      },
+      trig_identities: {
+        name: 'Trig Identities',
+        desc: 'Proving and applying trigonometric identities.',
+        concept: `Identities are equations true for all valid angles.
+Use them to simplify expressions or solve equations.`,
+        formulas: [`Pythagorean:
+  sin²x + cos²x = 1
+  1 + tan²x = sec²x
+  1 + cot²x = csc²x
+
+Double angle:
+  sin(2x) = 2sin(x)cos(x)
+  cos(2x) = cos²x - sin²x = 1-2sin²x
+
+Sum/Difference:
+  sin(A±B) = sinA·cosB ± cosA·sinB
+  cos(A±B) = cosA·cosB ∓ sinA·sinB`],
+        examples: [
+          {
+            title: 'Simplify: sin²x + cos²x + tan²x',
+            steps: ['Replace sin²x + cos²x with 1 (Pythagorean identity)', '1 + tan²x', 'Replace with sec²x', 'Answer: sec²x  ✓']
+          }
+        ],
+        practice: [
+          { q: 'Simplify: 1 - sin²x', answer: 'cos^2x', hint: 'From sin²x + cos²x = 1, so cos²x = 1 - sin²x' },
+          { q: 'sin(2x) in terms of sin and cos = ?', answer: '2sinxcosx', hint: 'Double angle formula for sine' }
+        ]
+      },
+      vectors: {
+        name: 'Vectors',
+        desc: 'Vector operations, magnitude, and dot product.',
+        concept: `A vector has both magnitude (size) and direction.
+Written as <a, b> or as i and j components.`,
+        formulas: [`Magnitude: |v| = √(a² + b²)
+
+Addition: <a,b> + <c,d> = <a+c, b+d>
+Scalar mult: k<a,b> = <ka, kb>
+
+Dot product: <a,b>·<c,d> = ac + bd
+  If dot product = 0, vectors are perpendicular`],
+        examples: [
+          {
+            title: 'Find magnitude of v = <3, 4>',
+            steps: ['|v| = √(3² + 4²)', '= √(9 + 16)', '= √25', '= 5  ✓']
+          }
+        ],
+        practice: [
+          { q: '|<5, 12>| = ?', answer: '13', hint: '√(25 + 144) = √169' },
+          { q: '<2,3> + <4,-1> = ?', answer: '<6,2>', hint: 'Add component by component' },
+          { q: '<3,4> · <1,2> = ?', answer: '11', hint: '3(1) + 4(2)' }
+        ]
+      },
+      conics: {
+        name: 'Conic Sections',
+        desc: 'Circles, parabolas, ellipses, and hyperbolas.',
+        concept: `Conic sections are curves formed by intersecting a cone with a plane.`,
+        formulas: [`Circle:    (x-h)² + (y-k)² = r²   center (h,k), radius r
+Parabola:  y = a(x-h)² + k        vertex (h,k)
+Ellipse:   x²/a² + y²/b² = 1
+Hyperbola: x²/a² - y²/b² = 1`],
+        examples: [
+          {
+            title: 'Find center and radius: (x-3)²+(y+2)²=25',
+            steps: ['Compare to (x-h)²+(y-k)²=r²', 'h=3, k=-2, r²=25', 'Center: (3,-2)', 'Radius: √25 = 5  ✓']
+          }
+        ],
+        practice: [
+          { q: 'Center of (x+1)²+(y-4)²=9 ?', answer: '(-1,4)', hint: 'h=-1 (opposite sign), k=4' },
+          { q: 'Radius of x²+y²=36 ?', answer: '6', hint: 'r²=36, so r=6' }
+        ]
+      },
+      sequences: {
+        name: 'Sequences & Series',
+        desc: 'Arithmetic and geometric sequences and their sums.',
+        concept: `Arithmetic sequence: add a constant difference each term
+Geometric sequence: multiply by a constant ratio each term`,
+        formulas: [`Arithmetic:
+  aₙ = a₁ + (n-1)d       (nth term)
+  Sₙ = n(a₁+aₙ)/2        (sum of n terms)
+
+Geometric:
+  aₙ = a₁ · rⁿ⁻¹         (nth term)
+  Sₙ = a₁(1-rⁿ)/(1-r)    (sum, r≠1)
+  S∞ = a₁/(1-r)           (infinite sum, |r|<1)`],
+        examples: [
+          {
+            title: 'Find the 10th term of: 3, 7, 11, 15...',
+            steps: ['This is arithmetic: d = 4, a₁ = 3', 'aₙ = a₁ + (n-1)d', 'a₁₀ = 3 + (9)(4)', 'a₁₀ = 3 + 36 = 39  ✓']
+          }
+        ],
+        practice: [
+          { q: '5th term of 2, 5, 8, 11... ?', answer: '14', hint: 'd=3, a₅ = 2 + 4(3)' },
+          { q: '4th term of 2, 6, 18... ?', answer: '54', hint: 'r=3, a₄ = 2 · 3³' },
+          { q: 'Sum of first 5 terms of 1, 3, 5, 7, 9?', answer: '25', hint: 'S₅ = 5(a₁+a₅)/2 = 5(1+9)/2' }
+        ]
+      }
+    }
+  },
+  calc1: {
+    name: 'Calculus 1',
+    topics: {
+      limits: {
+        name: 'Limits',
+        desc: 'What a function approaches as x gets close to a value.',
+        concept: `A limit describes the value a function approaches as the input gets close to some value.
+lim f(x) = L as x→a means f(x) gets closer to L as x gets closer to a.`,
+        formulas: [`Direct substitution: plug in x = a (works when function is defined there)
+Factor and cancel: for 0/0 indeterminate forms
+L'Hôpital's Rule: for 0/0 or ∞/∞, take derivatives top and bottom
+
+One-sided limits:
+  lim f(x) from x→a⁻ (left)
+  lim f(x) from x→a⁺ (right)
+  Two-sided limit exists when both sides equal`],
+        examples: [
+          {
+            title: 'Find lim (x²-9)/(x-3) as x→3',
+            steps: ['Direct sub gives 0/0 — factor instead', 'x²-9 = (x+3)(x-3)', 'Cancel (x-3): limit of (x+3)', 'Substitute x=3: 3+3 = 6  ✓']
+          }
+        ],
+        practice: [
+          { q: 'lim (5x-3) as x→4 = ?', answer: '17', hint: 'Direct substitution: plug in x=4' },
+          { q: 'lim (x²-4)/(x-2) as x→2 = ?', answer: '4', hint: 'Factor x²-4 as (x+2)(x-2) and cancel' }
+        ]
+      },
+      derivatives: {
+        name: 'Derivatives',
+        desc: 'Instantaneous rate of change — slope of the tangent line.',
+        concept: `f'(x) = lim [f(x+h)-f(x)]/h as h→0
+Geometric meaning: slope of the tangent line
+Physical meaning: velocity (if f is position)`,
+        formulas: [`Power rule:    d/dx[xⁿ] = nxⁿ⁻¹
+Constant:      d/dx[c] = 0
+Product rule:  d/dx[fg] = f'g + fg'
+Quotient rule: d/dx[f/g] = (f'g - fg')/g²
+Chain rule:    d/dx[f(g(x))] = f'(g(x))·g'(x)
+
+Trig: d/dx[sin x]=cos x,  d/dx[cos x]=-sin x
+      d/dx[eˣ]=eˣ,  d/dx[ln x]=1/x`],
+        examples: [
+          {
+            title: 'Find d/dx [3x⁴ - 5x² + 7]',
+            steps: ['Apply power rule term by term', 'd/dx[3x⁴] = 12x³', 'd/dx[-5x²] = -10x', 'd/dx[7] = 0', 'Answer: 12x³ - 10x  ✓']
+          }
+        ],
+        practice: [
+          { q: "f'(x) if f(x) = x⁵ = ?", answer: '5x^4', hint: 'Power rule: bring down 5, reduce exponent by 1' },
+          { q: 'dy/dx if y = 4x³-2x+9 = ?', answer: '12x^2-2', hint: 'Differentiate each term; constant 9 disappears' },
+          { q: "f'(2) if f(x) = 3x² = ?", answer: '12', hint: "First find f'(x)=6x, then plug in x=2" }
+        ]
+      },
+      chain: {
+        name: 'Chain Rule',
+        desc: 'Differentiating composite (nested) functions.',
+        concept: `If y = f(g(x)), then dy/dx = f'(g(x)) · g'(x)
+"Derivative of outside, leave inside alone, times derivative of inside"`,
+        formulas: [`Identify: outer function and inner function
+Step 1: differentiate the outer (leave inner alone)
+Step 2: multiply by derivative of the inner
+
+Examples of inner functions:
+  sin(3x) → outer=sin, inner=3x
+  (x²+1)⁵ → outer=u⁵, inner=x²+1
+  e^(x²) → outer=eᵘ, inner=x²`],
+        examples: [
+          {
+            title: 'Find d/dx [(2x+1)⁴]',
+            steps: ['Outer: u⁴, Inner: 2x+1', 'Derivative of outer: 4u³ = 4(2x+1)³', 'Derivative of inner: 2', 'Multiply: 4(2x+1)³ · 2 = 8(2x+1)³  ✓']
+          }
+        ],
+        practice: [
+          { q: 'd/dx [sin(3x)] = ?', answer: '3cos(3x)', hint: 'Outer=sin, inner=3x. d/dx[sin]=cos, d/dx[3x]=3' },
+          { q: 'd/dx [e^(x²)] = ?', answer: '2x*e^(x^2)', hint: 'Outer=eᵘ stays eᵘ, inner=x², derivative=2x' }
+        ]
+      },
+      integrals: {
+        name: 'Integrals',
+        desc: 'Antiderivatives, area under a curve.',
+        concept: `Integration is the reverse of differentiation.
+The antiderivative F(x) satisfies F'(x) = f(x).
+Always add + C (constant of integration) for indefinite integrals.`,
+        formulas: [`Power rule (reverse): ∫xⁿ dx = xⁿ⁺¹/(n+1) + C  (n≠-1)
+∫eˣ dx = eˣ + C
+∫1/x dx = ln|x| + C
+∫cos x dx = sin x + C
+∫sin x dx = -cos x + C
+
+Definite integral: ∫[a to b] f(x)dx = F(b) - F(a)`],
+        examples: [
+          {
+            title: 'Find ∫(4x³ - 6x) dx',
+            steps: ['Integrate term by term', '∫4x³ dx = 4·x⁴/4 = x⁴', '∫-6x dx = -6·x²/2 = -3x²', 'Answer: x⁴ - 3x² + C  ✓']
+          }
+        ],
+        practice: [
+          { q: '∫x⁴ dx = ?', answer: 'x^5/5+c', hint: 'Power rule in reverse: raise by 1, divide by new exponent' },
+          { q: '∫[0 to 3] 2x dx = ?', answer: '9', hint: 'Antiderivative is x², evaluate: 3²-0²' }
+        ]
+      }
+    }
+  }
+};
+
+// ── STATE ──
+let currentCourse = 'alg1';
+let currentTopic  = null;
+
+// ── INIT ──
+function init() {
+  showCourse('alg1');
+}
+
+// ── SHOW COURSE ──
+function showCourse(courseId) {
+  currentCourse = courseId;
+  document.querySelectorAll('.course-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  const course = COURSES[courseId];
+  const topicIds = Object.keys(course.topics);
+  currentTopic = topicIds[0];
+
+  // Build topic pills
+  const bar = document.getElementById('topic-bar');
+  bar.innerHTML = topicIds.map((tid, i) =>
+    `<button class="pill ${i===0?'active':''}" onclick="showTopic('${tid}',this)">${course.topics[tid].name}</button>`
+  ).join('');
+
+  showTopicContent(currentTopic);
+}
+
+// ── SHOW TOPIC ──
+function showTopic(topicId, btn) {
+  currentTopic = topicId;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  showTopicContent(topicId);
+  window.scrollTo(0,0);
+}
+
+function showTopicContent(topicId) {
+  extraProblemCount = 0;
+  const topic = COURSES[currentCourse].topics[topicId];
+  const content = document.getElementById('main-content');
+
+  content.innerHTML = `
+    <div class="topic-header">
+      <h1>${topic.name}</h1>
+      <p>${topic.desc}</p>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab active" onclick="switchTab(this,'concept')">Concept</button>
+      ${topic.examples && topic.examples.length ? '<button class="tab" onclick="switchTab(this,\'examples\')">Worked Examples</button>' : ''}
+      <button class="tab" onclick="switchTab(this,'practice')">Practice</button>
+    </div>
+
+    <!-- CONCEPT -->
+    <div id="panel-concept" class="tab-panel active">
+      <div class="card">
+        <div class="card-title">💡 ${topic.name}</div>
+        <div class="concept">${topic.concept.replace(/\n/g,'<br>')}</div>
+        ${topic.formulas.map(f => `<div class="formula">${f}</div>`).join('')}
+      </div>
+    </div>
+
+    <!-- EXAMPLES -->
+    ${topic.examples && topic.examples.length ? `
+    <div id="panel-examples" class="tab-panel">
+      ${topic.examples.map(ex => `
+        <div class="card">
+          <div class="card-title">✏️ ${ex.title}</div>
+          <div class="steps">
+            ${ex.steps.map((s,i) => `
+              <div class="step">
+                <div class="step-num">${i+1}</div>
+                <div class="step-body">${s}</div>
+              </div>`).join('')}
+          </div>
+        </div>`).join('')}
+    </div>` : ''}
+
+    <!-- PRACTICE -->
+    <div id="panel-practice" class="tab-panel">
+      ${topic.practice.map((p,i) => `
+        <div class="practice-problem">
+          <div class="q"><strong>Problem ${i+1}.</strong> ${p.q}</div>
+          <div class="input-row">
+            <input type="text" class="answer-input" id="pr${i}-ans" placeholder="Your answer">
+            <button class="check-btn" onclick="checkAnswer('pr${i}','${p.answer.replace(/'/g,"\\'")}')">Check</button>
+            <button class="hint-btn" onclick="showHint('pr${i}','${p.hint.replace(/'/g,"\\'")}')">Hint</button>
+          </div>
+          <div class="feedback" id="pr${i}-feedback"></div>
+        </div>`).join('')}
+
+      <!-- MORE PROBLEMS -->
+      <div id="more-problems-section" style="margin-top:16px;">
+        <button class="check-btn" style="width:100%;padding:12px;font-size:0.9rem;background:var(--ink);" onclick="generateMoreProblems()" id="more-problems-btn">
+          ✦ Generate More Problems
+        </button>
+        <div id="generated-problems" style="margin-top:12px;"></div>
+      </div>
+    </div>
+
+    <!-- ASK AI -->
+    <div class="ask-section">
+      <div class="card-title" style="margin-bottom:10px;">🤖 Ask the AI Tutor</div>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;">Stuck? Show your work and ask where you went wrong — or ask for any explanation.</p>
+      <textarea id="ask-input" placeholder="Example: I tried to solve x²-5x+6=0 by factoring and got (x-2)(x-4)=0 so x=2 or x=4. Is that right?"></textarea>
+      <br>
+      <button class="ask-btn" id="ask-btn" onclick="askAI()">Ask Tutor</button>
+      <div class="ai-response" id="ai-response"></div>
+    </div>
+  `;
+}
+
+// ── TAB SWITCH ──
+function switchTab(btn, panel) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const el = document.getElementById('panel-' + panel);
+  if (el) el.classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── CHECK ANSWER ──
+function normalize(s) {
+  return s.toLowerCase().replace(/\s+/g,'').replace(/×/g,'*').replace(/\+c$/,'').trim();
+}
+
+function checkAnswer(id, correct) {
+  const input = document.getElementById(id + '-ans').value;
+  const fb    = document.getElementById(id + '-feedback');
+  if (!input.trim()) {
+    fb.className = 'feedback hint';
+    fb.textContent = 'Please enter an answer first.';
+    return;
+  }
+  if (normalize(input) === normalize(correct)) {
+    fb.className = 'feedback correct';
+    fb.textContent = '✓ Correct! Well done.';
+  } else {
+    fb.className = 'feedback wrong';
+    fb.textContent = `✗ Not quite — you entered "${input}". Try again or use the hint.`;
+  }
+}
+
+function showHint(id, hintText) {
+  const fb = document.getElementById(id + '-feedback');
+  fb.className = 'feedback hint';
+  fb.textContent = '💡 Hint: ' + hintText;
+}
+
+// ── GENERATE MORE PROBLEMS ──
+let extraProblemCount = 0;
+
+async function generateMoreProblems() {
+  const btn = document.getElementById('more-problems-btn');
+  const container = document.getElementById('generated-problems');
+  const topic = COURSES[currentCourse].topics[currentTopic];
+
+  btn.textContent = '⏳ Generating...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/tutor/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question: `Generate exactly 3 new practice problems for the topic: ${topic.name} (${COURSES[currentCourse].name}).
+Format your response as JSON only — no other text — like this:
+[
+  {"q": "problem text here", "answer": "exact answer", "hint": "hint text"},
+  {"q": "problem text here", "answer": "exact answer", "hint": "hint text"},
+  {"q": "problem text here", "answer": "exact answer", "hint": "hint text"}
+]
+Make the problems varied in difficulty. Use plain text math notation.`,
+        context: `${topic.name} — ${COURSES[currentCourse].name}`
+      })
+    });
+
+    const data = await res.json();
+    const text = data.answer || '';
+
+    // Parse JSON from response
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('Could not parse problems');
+
+    const problems = JSON.parse(jsonMatch[0]);
+
+    problems.forEach((p, i) => {
+      extraProblemCount++;
+      const id = `gen${extraProblemCount}`;
+      const div = document.createElement('div');
+      div.className = 'practice-problem';
+      div.style.marginBottom = '12px';
+      div.innerHTML = `
+        <div class="q"><strong>Problem ${topic.practice.length + extraProblemCount - problems.length + i + 1}.</strong> ${p.q}</div>
+        <div class="input-row">
+          <input type="text" class="answer-input" id="${id}-ans" placeholder="Your answer">
+          <button class="check-btn" onclick="checkAnswer('${id}','${p.answer.replace(/'/g,"\\'")}')">Check</button>
+          <button class="hint-btn" onclick="showHint('${id}','${p.hint.replace(/'/g,"\\'")}')">Hint</button>
+        </div>
+        <div class="feedback" id="${id}-feedback"></div>
+      `;
+      container.appendChild(div);
+    });
+
+    toast('3 new problems generated!');
+
+  } catch(e) {
+    toast('Could not generate problems — try again');
+    console.error(e);
+  }
+
+  btn.textContent = '✦ Generate More Problems';
+  btn.disabled = false;
+}
+
+// ── ASK AI ──
+async function askAI() {
+  const input = document.getElementById('ask-input').value.trim();
+  if (!input) return;
+
+  const btn      = document.getElementById('ask-btn');
+  const response = document.getElementById('ai-response');
+  const topic    = COURSES[currentCourse].topics[currentTopic];
+
+  btn.disabled    = true;
+  btn.textContent = 'Thinking...';
+  response.style.display = 'block';
+  response.textContent   = '...';
+
+  try {
+    const res = await fetch('/tutor/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question: input,
+        context: `Current topic: ${topic.name} (${COURSES[currentCourse].name})`
+      })
+    });
+    const data = await res.json();
+    response.textContent = data.answer || ('Error: ' + (data.error || 'No response'));
+  } catch(e) {
+    response.textContent = 'Connection error — make sure D.U.D.E is running at localhost:5000.';
+  }
+
+  btn.disabled    = false;
+  btn.textContent = 'Ask Tutor';
+}
+
+// Ctrl+Enter to submit
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.ctrlKey) {
+    const btn = document.getElementById('ask-btn');
+    if (btn) askAI();
+  }
+});
+
+init();
+</script>
+</body>
+</html>
