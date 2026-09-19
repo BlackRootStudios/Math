@@ -1084,85 +1084,11 @@ Make the problems varied in difficulty. Use plain text math notation. Answers sh
   btn.textContent = '✦ Generate More Problems';
   btn.disabled = false;
 }
-  const btn = document.getElementById('more-problems-btn');
-  const container = document.getElementById('generated-problems');
-  const topic = COURSES[currentCourse].topics[currentTopic];
 
   btn.textContent = '⏳ Generating...';
   btn.disabled = true;
 
-  const prompt = `Generate exactly 3 new practice problems for the topic: ${topic.name} (${COURSES[currentCourse].name}).
-Format your response as JSON only — no other text — like this:
-[
-  {"q": "problem text here", "answer": "exact answer", "hint": "hint text"},
-  {"q": "problem text here", "answer": "exact answer", "hint": "hint text"},
-  {"q": "problem text here", "answer": "exact answer", "hint": "hint text"}
-]
-Make the problems varied in difficulty. Use plain text math notation. Answers should be simple strings.`;
 
-  let text = '';
-
-  try {
-    // Try D.U.D.E first
-    const res = await fetch('/tutor/ask', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question: prompt, context: `${topic.name} — ${COURSES[currentCourse].name}` })
-    });
-    const data = await res.json();
-    text = data.answer || '';
-  } catch(e) {
-    // D.U.D.E not available — try direct API
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', 'x-api-key': '' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 800,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
-      const data = await res.json();
-      text = data.content?.[0]?.text || '';
-    } catch(e2) {
-      toast('AI not available — make sure D.U.D.E is running');
-      btn.textContent = '✦ Generate More Problems';
-      btn.disabled = false;
-      return;
-    }
-  }
-
-  try {
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) throw new Error('Could not parse problems');
-    const problems = JSON.parse(jsonMatch[0]);
-
-    problems.forEach((p, i) => {
-      extraProblemCount++;
-      const id = `gen${extraProblemCount}`;
-      const div = document.createElement('div');
-      div.className = 'practice-problem';
-      div.style.marginBottom = '12px';
-      div.innerHTML = `
-        <div class="q"><strong>Problem ${topic.practice.length + extraProblemCount - problems.length + i + 1}.</strong> ${p.q}</div>
-        <div class="input-row">
-          <input type="text" class="answer-input" id="${id}-ans" placeholder="Your answer">
-          <button class="check-btn" onclick="checkAnswer('${id}','${p.answer.replace(/'/g,"\\'")}')">Check</button>
-          <button class="hint-btn" onclick="showHint('${id}','${p.hint.replace(/'/g,"\\'")}')">Hint</button>
-        </div>
-        <div class="feedback" id="${id}-feedback"></div>
-      `;
-      container.appendChild(div);
-    });
-    toast('3 new problems generated!');
-  } catch(e) {
-    toast('Could not parse problems — try again');
-  }
-
-  btn.textContent = '✦ Generate More Problems';
-  btn.disabled = false;
-}
 
 // ── ASK AI ──
 async function askAI() {
