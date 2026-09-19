@@ -630,6 +630,7 @@ function showTopic(topicId, btn) {
 
 function showTopicContent(topicId) {
   extraProblemCount = 0;
+  extraProblemIndex = {};
   const topic = COURSES[currentCourse].topics[topicId];
   const content = document.getElementById('main-content');
 
@@ -743,39 +744,317 @@ function showHint(id, hintText) {
 
 // ── GENERATE MORE PROBLEMS ──
 let extraProblemCount = 0;
+let extraProblemIndex = {};
+
+// Pre-generated problem banks — works offline and on GitHub Pages
+const EXTRA_PROBLEMS = {
+  alg1: {
+    expressions: [
+      { q: 'Simplify: 5x - 2 + 3x + 8', answer: '8x+6', hint: 'Combine x terms, then combine numbers' },
+      { q: 'Expand: 4(3x - 2)', answer: '12x-8', hint: 'Distribute 4 to each term' },
+      { q: 'Simplify: 2a + 3b + 5a - b', answer: '7a+2b', hint: 'Group like terms: a terms and b terms' },
+      { q: 'Expand: -2(x + 5)', answer: '-2x-10', hint: 'Distribute -2 — watch the signs' },
+      { q: 'Simplify: 6x² + 3x - 2x² + x', answer: '4x^2+4x', hint: 'Combine x² terms separately from x terms' },
+      { q: 'Expand: 3(2x + 4) - 5', answer: '6x+7', hint: 'Distribute first, then combine constants' },
+      { q: 'Simplify: 4(x + 2) + 3(x - 1)', answer: '7x+5', hint: 'Expand both, then combine like terms' },
+      { q: 'What is the coefficient of x in: 7x - 3?', answer: '7', hint: 'The coefficient is the number multiplying x' },
+      { q: 'Simplify: 2(3a - 4) + 5a', answer: '11a-8', hint: 'Distribute 2 first: 6a - 8 + 5a' },
+      { q: 'Expand: -(4x - 6)', answer: '-4x+6', hint: 'Distribute -1 to each term' }
+    ],
+    equations: [
+      { q: 'Solve: 5x - 10 = 20', answer: '6', hint: 'Add 10 to both sides, then divide by 5' },
+      { q: 'Solve: 3x + 9 = 0', answer: '-3', hint: 'Subtract 9, then divide by 3' },
+      { q: 'Solve: 2(x + 3) = 14', answer: '4', hint: 'Distribute first: 2x + 6 = 14' },
+      { q: 'Solve: x/4 = 7', answer: '28', hint: 'Multiply both sides by 4' },
+      { q: 'Solve: 6x - 4 = 2x + 8', answer: '3', hint: 'Move x terms to one side: 4x = 12' },
+      { q: 'Solve: 3(2x - 1) = 15', answer: '3', hint: 'Distribute: 6x - 3 = 15' },
+      { q: 'Solve: x/3 + 2 = 5', answer: '9', hint: 'Subtract 2 first, then multiply by 3' },
+      { q: 'Solve: 4x + 1 = 2x + 9', answer: '4', hint: 'Subtract 2x from both sides' },
+      { q: 'Solve: 10 - 3x = 1', answer: '3', hint: 'Subtract 10 from both sides: -3x = -9' },
+      { q: 'Solve: 5(x - 2) = 25', answer: '7', hint: 'Distribute: 5x - 10 = 25' }
+    ],
+    inequalities: [
+      { q: 'Solve: 4x - 8 > 0 (give x > ?)', answer: 'x>2', hint: 'Add 8, then divide by 4' },
+      { q: 'Solve: -2x < 10 (give x > ?)', answer: 'x>-5', hint: 'Divide by -2 — flip the sign!' },
+      { q: 'Solve: 3x + 6 ≤ 15 (give x ≤ ?)', answer: 'x<=3', hint: 'Subtract 6, then divide by 3' },
+      { q: 'Solve: x/2 > 4 (give x > ?)', answer: 'x>8', hint: 'Multiply both sides by 2' },
+      { q: 'Solve: -x > 5 (give x < ?)', answer: 'x<-5', hint: 'Multiply by -1 — flip the sign!' },
+      { q: 'Solve: 2x - 3 ≥ 7 (give x ≥ ?)', answer: 'x>=5', hint: 'Add 3, then divide by 2' },
+      { q: 'Solve: 5 - x < 2 (give x > ?)', answer: 'x>3', hint: 'Subtract 5: -x < -3, then multiply by -1' },
+      { q: 'Solve: 3x + 1 > 10 (give x > ?)', answer: 'x>3', hint: 'Subtract 1, then divide by 3' },
+      { q: 'Solve: -4x ≥ 16 (give x ≤ ?)', answer: 'x<=-4', hint: 'Divide by -4 — flip the sign!' },
+      { q: 'Solve: x + 5 < 3 (give x < ?)', answer: 'x<-2', hint: 'Subtract 5 from both sides' }
+    ],
+    graphing: [
+      { q: 'Slope of y = -2x + 7?', answer: '-2', hint: 'In y = mx + b, m is the slope' },
+      { q: 'y-intercept of y = 5x - 3?', answer: '-3', hint: 'In y = mx + b, b is the y-intercept' },
+      { q: 'Slope between (0,0) and (3,9)?', answer: '3', hint: 'slope = (9-0)/(3-0)' },
+      { q: 'Slope between (2,5) and (4,9)?', answer: '2', hint: 'slope = (9-5)/(4-2) = 4/2' },
+      { q: 'y-intercept of 2x + y = 8?', answer: '8', hint: 'Set x=0: y = 8' },
+      { q: 'What is the slope of a horizontal line?', answer: '0', hint: 'Horizontal lines have no rise, only run' },
+      { q: 'Slope of y = x?', answer: '1', hint: 'y = 1x + 0, so slope = 1' },
+      { q: 'What is slope of a vertical line?', answer: 'undefined', hint: 'Division by zero — run is zero' },
+      { q: 'Write slope-intercept form: slope=3, y-int=4', answer: 'y=3x+4', hint: 'y = mx + b where m=3 and b=4' },
+      { q: 'Slope between (-1,2) and (3,10)?', answer: '2', hint: 'slope = (10-2)/(3-(-1)) = 8/4' }
+    ],
+    systems: [
+      { q: 'x+y=6, x-y=2. What is x?', answer: '4', hint: 'Add the equations: 2x=8' },
+      { q: 'x+y=6, x-y=2. What is y?', answer: '2', hint: 'Substitute x=4 into x+y=6' },
+      { q: '2x+y=7, x+y=4. What is x?', answer: '3', hint: 'Subtract second from first: x=3' },
+      { q: '2x+y=7, x+y=4. What is y?', answer: '1', hint: 'Substitute x=3 into x+y=4' },
+      { q: 'x+2y=8, x-y=2. What is y?', answer: '2', hint: 'Subtract second from first: 3y=6' },
+      { q: 'x+2y=8, x-y=2. What is x?', answer: '4', hint: 'Substitute y=2 into x-y=2' },
+      { q: '3x+y=10, x+y=6. What is x?', answer: '2', hint: 'Subtract second from first: 2x=4' },
+      { q: '3x+y=10, x+y=6. What is y?', answer: '4', hint: 'Substitute x=2 into x+y=6' },
+      { q: 'y=2x and x+y=9. What is x?', answer: '3', hint: 'Substitute y=2x: x+2x=9, so 3x=9' },
+      { q: 'y=2x and x+y=9. What is y?', answer: '6', hint: 'Substitute x=3 into y=2x' }
+    ]
+  },
+  alg2: {
+    quadratics: [
+      { q: 'Solve x²-9=0', answer: 'x=3,-3', hint: 'Factor as (x+3)(x-3)=0' },
+      { q: 'Solve x²+5x+6=0', answer: 'x=-2,-3', hint: 'Factor: find two numbers that multiply to 6 add to 5' },
+      { q: 'Discriminant of x²-6x+9=0?', answer: '0', hint: 'b²-4ac = 36-36' },
+      { q: 'Solve x²=25', answer: 'x=5,-5', hint: 'Take square root of both sides: x=±5' },
+      { q: 'How many solutions: x²+4=0?', answer: '0', hint: 'Discriminant = 0-16 < 0' },
+      { q: 'Solve x²-4x=0', answer: 'x=0,4', hint: 'Factor out x: x(x-4)=0' },
+      { q: 'Vertex x-coordinate of y=x²-6x+5?', answer: '3', hint: 'x = -b/2a = 6/2' },
+      { q: 'Solve 2x²=8', answer: 'x=2,-2', hint: 'Divide by 2: x²=4, then take square root' },
+      { q: 'Solve x²+x-12=0', answer: 'x=3,-4', hint: 'Factor: find two numbers multiply to -12 add to 1' },
+      { q: 'Solve (x-3)²=16', answer: 'x=7,-1', hint: 'Take square root: x-3=±4' }
+    ],
+    polynomials: [
+      { q: 'Expand (x+3)²', answer: 'x^2+6x+9', hint: 'Use (a+b)²=a²+2ab+b²' },
+      { q: 'Factor x²-25', answer: '(x+5)(x-5)', hint: 'Difference of squares: a²-b²=(a+b)(a-b)' },
+      { q: 'Degree of 5x³-2x+7?', answer: '3', hint: 'Highest exponent is 3' },
+      { q: 'Expand (x-4)²', answer: 'x^2-8x+16', hint: 'Use (a-b)²=a²-2ab+b²' },
+      { q: 'Factor x²+8x+16', answer: '(x+4)^2', hint: 'Perfect square trinomial: (x+4)²' },
+      { q: 'Leading coefficient of 3x⁴-7x²+2?', answer: '3', hint: 'Coefficient of the highest degree term' },
+      { q: 'Expand (2x+1)(x-3)', answer: '2x^2-5x-3', hint: 'FOIL: First, Outer, Inner, Last' },
+      { q: 'Factor 4x²-1', answer: '(2x+1)(2x-1)', hint: 'Difference of squares with a=2x, b=1' },
+      { q: 'Expand (x+2)(x-2)', answer: 'x^2-4', hint: 'Difference of squares shortcut' },
+      { q: 'Factor x²-10x+25', answer: '(x-5)^2', hint: 'Perfect square trinomial: (x-5)²' }
+    ],
+    functions: [
+      { q: 'f(x)=2x+3. Find f(5)', answer: '13', hint: 'Plug in x=5: 2(5)+3' },
+      { q: 'g(x)=x²-1. Find g(-2)', answer: '3', hint: 'Plug in x=-2: (-2)²-1=4-1' },
+      { q: 'Find inverse of f(x)=x+4', answer: 'x-4', hint: 'Swap x and y: x=y+4, solve for y' },
+      { q: 'f(x)=3x, g(x)=x+1. Find f(g(2))', answer: '9', hint: 'First g(2)=3, then f(3)=9' },
+      { q: 'Domain of f(x)=1/x?', answer: 'x≠0', hint: 'Denominator cannot be zero' },
+      { q: 'f(x)=x²+1. Find f(0)', answer: '1', hint: 'Plug in x=0: 0+1' },
+      { q: 'Find inverse of f(x)=2x', answer: 'x/2', hint: 'Swap x and y: x=2y, solve: y=x/2' },
+      { q: 'f(x)=|x|. Find f(-7)', answer: '7', hint: 'Absolute value: |-7|=7' },
+      { q: 'f(x)=x+2, g(x)=3x. Find (f∘g)(1)', answer: '5', hint: 'g(1)=3, then f(3)=3+2' },
+      { q: 'Is f(x)=x² a one-to-one function? YES or NO', answer: 'no', hint: 'f(2)=f(-2)=4 — two inputs give same output' }
+    ],
+    exponentials: [
+      { q: 'log₂(16)=?', answer: '4', hint: '2^4=16' },
+      { q: 'log₁₀(1000)=?', answer: '3', hint: '10^3=1000' },
+      { q: 'ln(e)=?', answer: '1', hint: 'ln and e are inverses: ln(e¹)=1' },
+      { q: 'Solve 2ˣ=64', answer: '6', hint: '64=2^6' },
+      { q: 'log(100)=?', answer: '2', hint: 'log base 10: 10²=100' },
+      { q: 'Simplify log(x²) using log rules', answer: '2log(x)', hint: 'Power rule: log(xⁿ)=n·log(x)' },
+      { q: 'Solve 10ˣ=1', answer: '0', hint: 'log(1)=0, since 10⁰=1' },
+      { q: 'e^(ln 5)=?', answer: '5', hint: 'e and ln cancel each other out' },
+      { q: 'log₃(81)=?', answer: '4', hint: '3^4=81' },
+      { q: 'Solve 5ˣ=125', answer: '3', hint: '125=5^3' }
+    ]
+  },
+  precalc: {
+    trig: [
+      { q: 'sin(0°)=?', answer: '0', hint: 'At 0° the y-coordinate on unit circle is 0' },
+      { q: 'cos(90°)=?', answer: '0', hint: 'At 90° the x-coordinate on unit circle is 0' },
+      { q: 'tan(0°)=?', answer: '0', hint: 'tan=sin/cos=0/1=0' },
+      { q: 'sin(60°)=?', answer: '√3/2', hint: 'Unit circle: sin(60°)=√3/2' },
+      { q: 'cos(60°)=?', answer: '1/2', hint: 'Unit circle: cos(60°)=1/2' },
+      { q: 'sin(30°)=?', answer: '1/2', hint: 'Unit circle: sin(30°)=1/2' },
+      { q: 'cos(180°)=?', answer: '-1', hint: 'At 180° on unit circle, x-coordinate=-1' },
+      { q: 'sin(180°)=?', answer: '0', hint: 'At 180° on unit circle, y-coordinate=0' },
+      { q: 'tan(90°)=?', answer: 'undefined', hint: 'cos(90°)=0, so tan=sin/0=undefined' },
+      { q: 'cos(45°)=?', answer: '√2/2', hint: 'Unit circle: cos(45°)=√2/2' }
+    ],
+    trig_identities: [
+      { q: 'Simplify: sin²x + cos²x', answer: '1', hint: 'Pythagorean identity' },
+      { q: 'Simplify: 1 - cos²x', answer: 'sin^2x', hint: 'From sin²x+cos²x=1' },
+      { q: 'cos(2x) in terms of cos only?', answer: '2cos^2x-1', hint: 'Double angle: cos(2x)=2cos²x-1' },
+      { q: 'sin(2x)=?', answer: '2sinxcosx', hint: 'Double angle formula for sine' },
+      { q: 'Simplify: tan²x + 1', answer: 'sec^2x', hint: 'Pythagorean identity: 1+tan²x=sec²x' },
+      { q: 'Simplify: 1 + cot²x', answer: 'csc^2x', hint: 'Pythagorean identity: 1+cot²x=csc²x' },
+      { q: 'sec(x) in terms of cos(x)?', answer: '1/cosx', hint: 'sec is the reciprocal of cos' },
+      { q: 'csc(x) in terms of sin(x)?', answer: '1/sinx', hint: 'csc is the reciprocal of sin' },
+      { q: 'Simplify: sin(x)/cos(x)', answer: 'tanx', hint: 'Definition of tangent' },
+      { q: 'cos(-x)=? in terms of cos(x)', answer: 'cosx', hint: 'Cosine is an even function: cos(-x)=cos(x)' }
+    ],
+    vectors: [
+      { q: '|<3,4>|=?', answer: '5', hint: '√(9+16)=√25=5' },
+      { q: '<1,2>+<3,4>=?', answer: '<4,6>', hint: 'Add component by component' },
+      { q: '2·<3,5>=?', answer: '<6,10>', hint: 'Multiply each component by 2' },
+      { q: '<2,3>·<4,1>=?', answer: '11', hint: 'Dot product: 2(4)+3(1)' },
+      { q: '|<0,5>|=?', answer: '5', hint: '√(0+25)=5' },
+      { q: '<5,2>-<3,1>=?', answer: '<2,1>', hint: 'Subtract component by component' },
+      { q: 'Are <1,0> and <0,1> perpendicular? YES or NO', answer: 'yes', hint: 'Dot product: 1(0)+0(1)=0, so perpendicular' },
+      { q: '|<12,5>|=?', answer: '13', hint: '√(144+25)=√169=13' },
+      { q: '-1·<2,-3>=?', answer: '<-2,3>', hint: 'Multiply each component by -1' },
+      { q: '<3,0>·<0,4>=?', answer: '0', hint: '3(0)+0(4)=0 — vectors are perpendicular' }
+    ],
+    conics: [
+      { q: 'Center of (x-2)²+(y-3)²=16?', answer: '(2,3)', hint: 'Center is (h,k) where h=2, k=3' },
+      { q: 'Radius of x²+y²=49?', answer: '7', hint: 'r²=49, so r=7' },
+      { q: 'Vertex of y=(x-3)²+5?', answer: '(3,5)', hint: 'Vertex is at (h,k)=(3,5)' },
+      { q: 'Center of x²+(y+1)²=4?', answer: '(0,-1)', hint: 'h=0, k=-1 (opposite sign)' },
+      { q: 'Radius of (x+2)²+(y-1)²=25?', answer: '5', hint: 'r²=25, so r=5' },
+      { q: 'Vertex of y=2(x+1)²-3?', answer: '(-1,-3)', hint: 'Vertex form: h=-1 (opposite sign), k=-3' },
+      { q: 'What conic is x²/4+y²/9=1?', answer: 'ellipse', hint: 'Both terms positive and added — ellipse' },
+      { q: 'What conic is x²-y²=1?', answer: 'hyperbola', hint: 'Terms subtracted — hyperbola' },
+      { q: 'Center of (x+3)²+(y+4)²=1?', answer: '(-3,-4)', hint: 'h=-3, k=-4 (opposite signs)' },
+      { q: 'Radius of x²+y²=100?', answer: '10', hint: 'r²=100, so r=10' }
+    ],
+    sequences: [
+      { q: '6th term of 1,3,5,7...?', answer: '11', hint: 'd=2, a₆=1+5(2)=11' },
+      { q: '5th term of 2,6,18,54...?', answer: '162', hint: 'r=3, a₅=2·3⁴=162' },
+      { q: 'Sum of 1+2+3+...+10?', answer: '55', hint: 'Sₙ=n(a₁+aₙ)/2=10(1+10)/2' },
+      { q: 'Common difference of 5,8,11,14...?', answer: '3', hint: '8-5=3' },
+      { q: 'Common ratio of 4,12,36...?', answer: '3', hint: '12/4=3' },
+      { q: '4th term of 1,4,7,10...?', answer: '10', hint: 'd=3, a₄=1+3(3)=10' },
+      { q: '3rd term of 5,10,20...?', answer: '20', hint: 'r=2, a₃=5·2²=20' },
+      { q: 'Sum of first 4 terms of 3,6,9,12?', answer: '30', hint: 'S₄=4(3+12)/2=4(15)/2' },
+      { q: 'Is 2,4,8,16 arithmetic or geometric?', answer: 'geometric', hint: 'Each term multiplied by 2 — geometric' },
+      { q: 'Is 3,7,11,15 arithmetic or geometric?', answer: 'arithmetic', hint: 'Common difference of 4 — arithmetic' }
+    ]
+  },
+  calc1: {
+    limits: [
+      { q: 'lim (3x+1) as x→2=?', answer: '7', hint: 'Direct substitution: 3(2)+1' },
+      { q: 'lim (x²-1)/(x-1) as x→1=?', answer: '2', hint: 'Factor: (x+1)(x-1)/(x-1)=x+1, then sub x=1' },
+      { q: 'lim (2x²+3) as x→0=?', answer: '3', hint: 'Direct substitution: 2(0)+3' },
+      { q: 'lim x³ as x→2=?', answer: '8', hint: 'Direct substitution: 2³=8' },
+      { q: 'lim (x²-4)/(x+2) as x→-2=?', answer: '-4', hint: 'Factor: (x+2)(x-2)/(x+2)=x-2, sub x=-2' },
+      { q: 'lim (5-x) as x→3=?', answer: '2', hint: 'Direct substitution: 5-3' },
+      { q: 'lim x/x as x→0=?', answer: '1', hint: 'Simplify x/x=1 for all x≠0' },
+      { q: 'lim (x²+2x) as x→1=?', answer: '3', hint: 'Direct sub: 1+2=3' },
+      { q: 'lim (x+3)² as x→0=?', answer: '9', hint: 'Direct sub: (0+3)²=9' },
+      { q: 'lim (x³-8)/(x-2) as x→2=?', answer: '12', hint: 'Factor x³-8=(x-2)(x²+2x+4), cancel (x-2)' }
+    ],
+    derivatives: [
+      { q: "d/dx [x⁶]=?", answer: '6x^5', hint: 'Power rule: bring down 6, reduce exponent' },
+      { q: "d/dx [7x³]=?", answer: '21x^2', hint: 'Power rule: 7·3x²=21x²' },
+      { q: "d/dx [x²+5x-3]=?", answer: '2x+5', hint: 'Differentiate each term; constant goes to 0' },
+      { q: "f'(x) if f(x)=4x⁴-3x²+1=?", answer: '16x^3-6x', hint: 'Power rule on each term' },
+      { q: "d/dx [√x]=?", answer: '1/(2√x)', hint: '√x = x^(1/2), power rule gives (1/2)x^(-1/2)' },
+      { q: "d/dx [1/x]=?", answer: '-1/x^2', hint: '1/x = x^(-1), power rule gives -x^(-2)' },
+      { q: "f'(3) if f(x)=x²=?", answer: '6', hint: "f'(x)=2x, then plug in x=3" },
+      { q: "d/dx [eˣ]=?", answer: 'e^x', hint: 'The derivative of eˣ is eˣ — unique property' },
+      { q: "d/dx [ln x]=?", answer: '1/x', hint: 'Standard derivative of natural log' },
+      { q: "d/dx [sin x]=?", answer: 'cosx', hint: 'Standard trig derivative' }
+    ],
+    chain: [
+      { q: "d/dx [cos(2x)]=?", answer: '-2sin(2x)', hint: 'Outer=cos, derivative=-sin. Inner=2x, derivative=2' },
+      { q: "d/dx [(x²+1)³]=?", answer: '6x(x^2+1)^2', hint: 'Outer=u³, inner=x²+1. 3u²·2x' },
+      { q: "d/dx [e^(3x)]=?", answer: '3e^(3x)', hint: 'Outer=eᵘ stays eᵘ. Inner=3x, derivative=3' },
+      { q: "d/dx [sin(x²)]=?", answer: '2xcos(x^2)', hint: 'Outer=sin, derivative=cos. Inner=x², derivative=2x' },
+      { q: "d/dx [√(x+1)]=?", answer: '1/(2√(x+1))', hint: 'Outer=(u)^(1/2), inner=x+1. (1/2)u^(-1/2)·1' },
+      { q: "d/dx [(2x-1)⁴]=?", answer: '8(2x-1)^3', hint: '4(2x-1)³·2=8(2x-1)³' },
+      { q: "d/dx [ln(3x)]=?", answer: '1/x', hint: 'Outer=ln(u)=1/u. Inner=3x, derivative=3. So 1/(3x)·3' },
+      { q: "d/dx [tan(x²)]=?", answer: '2xsec^2(x^2)', hint: 'Outer=tan, derivative=sec². Inner=x², derivative=2x' },
+      { q: "d/dx [e^(x²+1)]=?", answer: '2xe^(x^2+1)', hint: 'Outer=eᵘ. Inner=x²+1, derivative=2x' },
+      { q: "d/dx [(x³+2)²]=?", answer: '6x^2(x^3+2)', hint: '2(x³+2)·3x²=6x²(x³+2)' }
+    ],
+    integrals: [
+      { q: '∫x³ dx=?', answer: 'x^4/4+c', hint: 'Power rule: raise by 1, divide by new exponent' },
+      { q: '∫5 dx=?', answer: '5x+c', hint: '∫constant dx = constant·x + C' },
+      { q: '∫3x² dx=?', answer: 'x^3+c', hint: '3·x³/3=x³+C' },
+      { q: '∫eˣ dx=?', answer: 'e^x+c', hint: 'The integral of eˣ is eˣ+C' },
+      { q: '∫[0 to 2] x dx=?', answer: '2', hint: 'Antiderivative is x²/2. Evaluate: 4/2-0' },
+      { q: '∫cos x dx=?', answer: 'sinx+c', hint: 'Standard integral: ∫cos x = sin x + C' },
+      { q: '∫[1 to 3] 2 dx=?', answer: '4', hint: '2x evaluated from 1 to 3: 2(3)-2(1)=4' },
+      { q: '∫1/x dx=?', answer: 'ln|x|+c', hint: 'Standard integral: ∫1/x = ln|x| + C' },
+      { q: '∫sin x dx=?', answer: '-cosx+c', hint: 'Standard integral: ∫sin x = -cos x + C' },
+      { q: '∫[0 to 1] x² dx=?', answer: '1/3', hint: 'Antiderivative x³/3. Evaluate: 1/3-0' }
+    ]
+  }
+};
 
 async function generateMoreProblems() {
   const btn = document.getElementById('more-problems-btn');
   const container = document.getElementById('generated-problems');
   const topic = COURSES[currentCourse].topics[currentTopic];
 
+  // Get the pre-generated bank for this topic
+  const bank = EXTRA_PROBLEMS[currentCourse]?.[currentTopic] || [];
+
+  // Initialize index tracker
+  const key = `${currentCourse}_${currentTopic}`;
+  if (extraProblemIndex[key] === undefined) extraProblemIndex[key] = 0;
+
+  // If we still have pre-generated problems, use them
+  if (bank.length > 0 && extraProblemIndex[key] < bank.length) {
+    const batch = bank.slice(extraProblemIndex[key], extraProblemIndex[key] + 3);
+    extraProblemIndex[key] += 3;
+
+    batch.forEach((p, i) => {
+      extraProblemCount++;
+      const id = `gen${extraProblemCount}`;
+      const div = document.createElement('div');
+      div.className = 'practice-problem';
+      div.style.marginBottom = '12px';
+      div.innerHTML = `
+        <div class="q"><strong>Problem ${topic.practice.length + extraProblemCount - batch.length + i + 1}.</strong> ${p.q}</div>
+        <div class="input-row">
+          <input type="text" class="answer-input" id="${id}-ans" placeholder="Your answer">
+          <button class="check-btn" onclick="checkAnswer('${id}','${p.answer.replace(/'/g,"\\'")}')">Check</button>
+          <button class="hint-btn" onclick="showHint('${id}','${p.hint.replace(/'/g,"\\'")}')">Hint</button>
+        </div>
+        <div class="feedback" id="${id}-feedback"></div>
+      `;
+      container.appendChild(div);
+    });
+    toast(`${batch.length} new problems added!`);
+    return;
+  }
+
+  // Bank exhausted — try D.U.D.E
   btn.textContent = '⏳ Generating...';
   btn.disabled = true;
 
-  try {
-    const res = await fetch('/tutor/ask', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        question: `Generate exactly 3 new practice problems for the topic: ${topic.name} (${COURSES[currentCourse].name}).
+  const prompt = `Generate exactly 3 new practice problems for the topic: ${topic.name} (${COURSES[currentCourse].name}).
 Format your response as JSON only — no other text — like this:
 [
   {"q": "problem text here", "answer": "exact answer", "hint": "hint text"},
   {"q": "problem text here", "answer": "exact answer", "hint": "hint text"},
   {"q": "problem text here", "answer": "exact answer", "hint": "hint text"}
 ]
-Make the problems varied in difficulty. Use plain text math notation.`,
-        context: `${topic.name} — ${COURSES[currentCourse].name}`
-      })
+Make the problems varied in difficulty. Use plain text math notation. Answers should be simple strings.`;
+
+  let text = '';
+  let gotResponse = false;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch('/tutor/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: prompt, context: `${topic.name} — ${COURSES[currentCourse].name}` }),
+      signal: controller.signal
     });
-
+    clearTimeout(timeout);
     const data = await res.json();
-    const text = data.answer || '';
+    text = data.answer || '';
+    gotResponse = true;
+  } catch(e) {
+    // D.U.D.E not available
+  }
 
-    // Parse JSON from response
+  if (!gotResponse) {
+    toast('All pre-built problems used — D.U.D.E needed for more');
+    btn.textContent = '✦ Generate More Problems';
+    btn.disabled = false;
+    return;
+  }
+
+  try {
     const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) throw new Error('Could not parse problems');
-
+    if (!jsonMatch) throw new Error('Parse error');
     const problems = JSON.parse(jsonMatch[0]);
 
     problems.forEach((p, i) => {
@@ -795,12 +1074,88 @@ Make the problems varied in difficulty. Use plain text math notation.`,
       `;
       container.appendChild(div);
     });
-
     toast('3 new problems generated!');
-
   } catch(e) {
-    toast('Could not generate problems — try again');
-    console.error(e);
+    toast('Could not generate — try again');
+  }
+
+  btn.textContent = '✦ Generate More Problems';
+  btn.disabled = false;
+}
+  const btn = document.getElementById('more-problems-btn');
+  const container = document.getElementById('generated-problems');
+  const topic = COURSES[currentCourse].topics[currentTopic];
+
+  btn.textContent = '⏳ Generating...';
+  btn.disabled = true;
+
+  const prompt = `Generate exactly 3 new practice problems for the topic: ${topic.name} (${COURSES[currentCourse].name}).
+Format your response as JSON only — no other text — like this:
+[
+  {"q": "problem text here", "answer": "exact answer", "hint": "hint text"},
+  {"q": "problem text here", "answer": "exact answer", "hint": "hint text"},
+  {"q": "problem text here", "answer": "exact answer", "hint": "hint text"}
+]
+Make the problems varied in difficulty. Use plain text math notation. Answers should be simple strings.`;
+
+  let text = '';
+
+  try {
+    // Try D.U.D.E first
+    const res = await fetch('/tutor/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: prompt, context: `${topic.name} — ${COURSES[currentCourse].name}` })
+    });
+    const data = await res.json();
+    text = data.answer || '';
+  } catch(e) {
+    // D.U.D.E not available — try direct API
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', 'x-api-key': '' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 800,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      const data = await res.json();
+      text = data.content?.[0]?.text || '';
+    } catch(e2) {
+      toast('AI not available — make sure D.U.D.E is running');
+      btn.textContent = '✦ Generate More Problems';
+      btn.disabled = false;
+      return;
+    }
+  }
+
+  try {
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('Could not parse problems');
+    const problems = JSON.parse(jsonMatch[0]);
+
+    problems.forEach((p, i) => {
+      extraProblemCount++;
+      const id = `gen${extraProblemCount}`;
+      const div = document.createElement('div');
+      div.className = 'practice-problem';
+      div.style.marginBottom = '12px';
+      div.innerHTML = `
+        <div class="q"><strong>Problem ${topic.practice.length + extraProblemCount - problems.length + i + 1}.</strong> ${p.q}</div>
+        <div class="input-row">
+          <input type="text" class="answer-input" id="${id}-ans" placeholder="Your answer">
+          <button class="check-btn" onclick="checkAnswer('${id}','${p.answer.replace(/'/g,"\\'")}')">Check</button>
+          <button class="hint-btn" onclick="showHint('${id}','${p.hint.replace(/'/g,"\\'")}')">Hint</button>
+        </div>
+        <div class="feedback" id="${id}-feedback"></div>
+      `;
+      container.appendChild(div);
+    });
+    toast('3 new problems generated!');
+  } catch(e) {
+    toast('Could not parse problems — try again');
   }
 
   btn.textContent = '✦ Generate More Problems';
