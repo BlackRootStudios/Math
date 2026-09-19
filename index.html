@@ -603,8 +603,10 @@ function init() {
 // ── SHOW COURSE ──
 function showCourse(courseId) {
   currentCourse = courseId;
-  document.querySelectorAll('.course-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
+  document.querySelectorAll('.course-btn').forEach(b => {
+    b.classList.remove('active');
+    if (b.getAttribute('onclick') === "showCourse('" + courseId + "')") b.classList.add('active');
+  });
 
   const course = COURSES[courseId];
   const topicIds = Object.keys(course.topics);
