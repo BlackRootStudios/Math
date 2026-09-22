@@ -79,14 +79,29 @@
   .feedback.wrong { background: var(--red-light); border: 1px solid #fecaca; color: var(--red); display: block; }
   .feedback.hint { background: var(--amber-light); border: 1px solid #fde68a; color: var(--amber); display: block; }
 
-  /* ASK AI */
+  /* ASK AI / CHAT */
   .ask-section { background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius); padding: 20px; margin-top: 28px; }
-  .ask-section textarea { width: 100%; border: 1px solid var(--rule); border-radius: 8px; padding: 10px; font-size: 0.88rem; font-family: var(--font); resize: vertical; min-height: 72px; outline: none; transition: border-color 0.15s; }
-  .ask-section textarea:focus { border-color: var(--blue); }
-  .ask-btn { background: var(--ink); color: #fff; border: none; border-radius: 8px; padding: 9px 22px; font-size: 0.88rem; cursor: pointer; font-family: var(--font); margin-top: 8px; }
+  .api-key-row { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
+  .api-key-row input { flex: 1; min-width: 200px; border: 1px solid var(--rule); border-radius: 6px; padding: 7px 10px; font-size: 0.82rem; font-family: var(--mono); outline: none; }
+  .api-key-row input:focus { border-color: var(--blue); }
+  .api-key-save { background: var(--blue); color: #fff; border: none; border-radius: 6px; padding: 7px 14px; font-size: 0.8rem; cursor: pointer; font-family: var(--font); white-space: nowrap; }
+  .api-key-status { font-size: 0.78rem; color: var(--green); }
+  .chat-window { background: var(--page); border: 1px solid var(--rule); border-radius: 8px; min-height: 180px; max-height: 420px; overflow-y: auto; padding: 14px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px; }
+  .chat-msg { max-width: 88%; padding: 10px 14px; border-radius: 10px; font-size: 0.88rem; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+  .chat-msg.user { background: var(--blue); color: #fff; align-self: flex-end; border-bottom-right-radius: 2px; }
+  .chat-msg.assistant { background: var(--card); border: 1px solid var(--rule); align-self: flex-start; border-bottom-left-radius: 2px; }
+  .chat-msg.assistant.streaming::after { content: '▍'; animation: blink 0.7s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .chat-input-row { display: flex; gap: 8px; align-items: flex-end; }
+  .chat-input-row textarea { flex: 1; border: 1px solid var(--rule); border-radius: 8px; padding: 9px 12px; font-size: 0.88rem; font-family: var(--font); resize: none; min-height: 44px; max-height: 120px; outline: none; transition: border-color 0.15s; line-height: 1.5; }
+  .chat-input-row textarea:focus { border-color: var(--blue); }
+  .ask-btn { background: var(--ink); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 0.88rem; cursor: pointer; font-family: var(--font); height: 44px; white-space: nowrap; }
   .ask-btn:hover { background: #1e293b; }
   .ask-btn:disabled { background: var(--muted); cursor: not-allowed; }
-  .ai-response { margin-top: 14px; padding: 14px; background: var(--page); border-radius: 8px; font-size: 0.88rem; line-height: 1.8; display: none; white-space: pre-wrap; }
+  .chat-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .clear-chat-btn { background: none; border: 1px solid var(--rule); border-radius: 6px; padding: 4px 12px; font-size: 0.75rem; color: var(--muted); cursor: pointer; font-family: var(--font); }
+  .clear-chat-btn:hover { border-color: var(--red); color: var(--red); }
+  .chat-hint { font-size: 0.75rem; color: var(--muted); }
 
   /* COURSE SECTIONS */
   .course-section { display: none; }
@@ -695,14 +710,29 @@ function showTopicContent(topicId) {
       </div>
     </div>
 
-    <!-- ASK AI -->
+    <!-- ASK AI CHAT -->
     <div class="ask-section">
-      <div class="card-title" style="margin-bottom:10px;">🤖 Ask the AI Tutor</div>
-      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;">Stuck? Show your work and ask where you went wrong — or ask for any explanation.</p>
-      <textarea id="ask-input" placeholder="Example: I tried to solve x²-5x+6=0 by factoring and got (x-2)(x-4)=0 so x=2 or x=4. Is that right?"></textarea>
-      <br>
-      <button class="ask-btn" id="ask-btn" onclick="askAI()">Ask Tutor</button>
-      <div class="ai-response" id="ai-response"></div>
+      <div class="card-title" style="margin-bottom:10px;">🤖 AI Tutor Chat</div>
+
+      <div class="api-key-row" id="api-key-row">
+        <input type="password" id="api-key-input" placeholder="Paste your Anthropic API key (sk-ant-...)">
+        <button class="api-key-save" onclick="saveApiKey()">Save Key</button>
+        <span class="api-key-status" id="api-key-status"></span>
+      </div>
+
+      <div class="chat-controls">
+        <span class="chat-hint">Ask anything — the tutor remembers the full conversation</span>
+        <button class="clear-chat-btn" onclick="clearChat()">Clear conversation</button>
+      </div>
+
+      <div class="chat-window" id="chat-window">
+        <div class="chat-msg assistant">Hi! I'm your math tutor. Ask me anything about the current topic — show me your work, tell me where you're stuck, or ask me to explain something step by step. 📐</div>
+      </div>
+
+      <div class="chat-input-row">
+        <textarea id="ask-input" placeholder="Type your question... (Enter to send, Shift+Enter for new line)" rows="1" oninput="autoResize(this)" onkeydown="chatKeyDown(event)"></textarea>
+        <button class="ask-btn" id="ask-btn" onclick="askAI()">Send</button>
+      </div>
     </div>
   `;
 }
@@ -1090,46 +1120,183 @@ Make the problems varied in difficulty. Use plain text math notation. Answers sh
 
 
 
-// ── ASK AI ──
-async function askAI() {
-  const input = document.getElementById('ask-input').value.trim();
-  if (!input) return;
+// ── CHAT STATE ──
+let chatHistory = [];
+let isStreaming  = false;
 
-  const btn      = document.getElementById('ask-btn');
-  const response = document.getElementById('ai-response');
-  const topic    = COURSES[currentCourse].topics[currentTopic];
-
-  btn.disabled    = true;
-  btn.textContent = 'Thinking...';
-  response.style.display = 'block';
-  response.textContent   = '...';
-
-  try {
-    const res = await fetch('/tutor/ask', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        question: input,
-        context: `Current topic: ${topic.name} (${COURSES[currentCourse].name})`
-      })
-    });
-    const data = await res.json();
-    response.textContent = data.answer || ('Error: ' + (data.error || 'No response'));
-  } catch(e) {
-    response.textContent = 'Connection error — make sure D.U.D.E is running at localhost:5000.';
+// ── API KEY ──
+function saveApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key.startsWith('sk-ant-')) {
+    document.getElementById('api-key-status').textContent = '⚠ Key should start with sk-ant-';
+    document.getElementById('api-key-status').style.color = 'var(--red)';
+    return;
   }
-
-  btn.disabled    = false;
-  btn.textContent = 'Ask Tutor';
+  localStorage.setItem('anthropic_api_key', key);
+  document.getElementById('api-key-status').textContent = '✓ Key saved';
+  document.getElementById('api-key-status').style.color = 'var(--green)';
+  document.getElementById('api-key-input').value = '••••••••••••••••';
 }
 
-// Ctrl+Enter to submit
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && e.ctrlKey) {
-    const btn = document.getElementById('ask-btn');
-    if (btn) askAI();
+function getApiKey() {
+  return localStorage.getItem('anthropic_api_key') || '';
+}
+
+// ── AUTO RESIZE TEXTAREA ──
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ── KEYBOARD HANDLER ──
+function chatKeyDown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    askAI();
   }
-});
+}
+
+// ── CLEAR CHAT ──
+function clearChat() {
+  chatHistory = [];
+  const win = document.getElementById('chat-window');
+  win.innerHTML = '<div class="chat-msg assistant">Conversation cleared. Ask me anything! 📐</div>';
+}
+
+// ── ADD MESSAGE TO CHAT WINDOW ──
+function addMessage(role, text, streaming = false) {
+  const win = document.getElementById('chat-window');
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + role + (streaming ? ' streaming' : '');
+  div.textContent = text;
+  win.appendChild(div);
+  win.scrollTop = win.scrollHeight;
+  return div;
+}
+
+// ── ASK AI (streaming) ──
+async function askAI() {
+  if (isStreaming) return;
+
+  const textarea = document.getElementById('ask-input');
+  const input    = textarea.value.trim();
+  if (!input) return;
+
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    addMessage('assistant', '⚠ Please enter your Anthropic API key above first.');
+    return;
+  }
+
+  const topic = COURSES[currentCourse].topics[currentTopic];
+  const btn   = document.getElementById('ask-btn');
+
+  // Add user message to UI and history
+  addMessage('user', input);
+  chatHistory.push({ role: 'user', content: input });
+
+  // Clear input
+  textarea.value = '';
+  textarea.style.height = 'auto';
+
+  // Disable send
+  isStreaming     = true;
+  btn.disabled    = true;
+  btn.textContent = '...';
+
+  // Create streaming assistant bubble
+  const assistantBubble = addMessage('assistant', '', true);
+
+  const systemPrompt = `You are a friendly, patient math tutor helping a student with ${COURSES[currentCourse].name}, specifically the topic: ${topic.name}.
+
+Your style:
+- Explain step by step, clearly
+- When the student shows their work, identify exactly where they went wrong
+- Use plain text math notation (no LaTeX)
+- Encourage the student — be warm and positive
+- Keep responses focused and not too long
+- If they ask for more explanation, go deeper
+- Remember the full conversation context`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'messages-2023-12-15'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: chatHistory,
+        stream: true
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      assistantBubble.classList.remove('streaming');
+      assistantBubble.textContent = '⚠ API error: ' + (err.error?.message || response.status);
+      chatHistory.push({ role: 'assistant', content: assistantBubble.textContent });
+    } else {
+      // Read the stream
+      const reader  = response.body.getReader();
+      const decoder = new TextDecoder();
+      let   fullText = '';
+      const win = document.getElementById('chat-window');
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim();
+            if (data === '[DONE]') continue;
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+                fullText += parsed.delta.text;
+                assistantBubble.textContent = fullText;
+                win.scrollTop = win.scrollHeight;
+              }
+            } catch(e) { /* skip malformed chunks */ }
+          }
+        }
+      }
+
+      assistantBubble.classList.remove('streaming');
+      if (!fullText) assistantBubble.textContent = '(No response — try again)';
+      chatHistory.push({ role: 'assistant', content: fullText });
+    }
+
+  } catch(e) {
+    assistantBubble.classList.remove('streaming');
+    assistantBubble.textContent = '⚠ Network error: ' + e.message + '\n\nNote: This requires an Anthropic API key. The key is stored only in your browser.';
+    chatHistory.push({ role: 'assistant', content: assistantBubble.textContent });
+  }
+
+  isStreaming     = false;
+  btn.disabled    = false;
+  btn.textContent = 'Send';
+  textarea.focus();
+}
+
+// ── RESTORE API KEY STATUS ON LOAD ──
+(function checkSavedKey() {
+  const key = localStorage.getItem('anthropic_api_key');
+  if (key) {
+    document.getElementById('api-key-input').value = '••••••••••••••••';
+    document.getElementById('api-key-status').textContent = '✓ Key saved';
+    document.getElementById('api-key-status').style.color = 'var(--green)';
+  }
+})();
 
 init();
 </script>
